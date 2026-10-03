@@ -60,6 +60,13 @@ const MEDIA_PLACEHOLDER_BG = "bg-base-300/60";
  * shared component used by Queue/Analytics. */
 const VIEW_SWITCH_TAB_CLASS = "px-4!";
 
+/* Sandbox harness bar buttons (Demo controls / Exit sandbox) on the blue
+ * bar: white text, transparent at rest, a light white tint on hover/press
+ * — replaces DaisyUI ghost's default gray hover/active fill, which washes
+ * out against primary blue. Harness chrome only, not component UI. */
+const HARNESS_BAR_BTN =
+  "text-primary-content border-transparent bg-transparent shadow-none hover:bg-primary-content/15 active:bg-primary-content/20 focus-visible:outline-primary-content";
+
 /**
  * AssetUploadSandbox — isolated design-validation prototype for a reusable
  * Galileo "Asset Upload / Asset View" component. Reachable only at the
@@ -341,9 +348,12 @@ export function AssetUploadSandbox({ onNavigateHome }) {
 
   return (
     <div className="min-h-screen bg-base-200">
-      {/* Sandbox harness chrome — clearly not production UI. Everything
+      {/* Sandbox harness chrome — Galileo primary blue (bg-primary /
+          text-primary-content theme tokens) so it reads as a prototype/demo
+          wrapper rather than the production app's global header.
+          Sandbox harness chrome — clearly not production UI. Everything
           below this bar is the actual component under design validation. */}
-      <div className="bg-neutral text-neutral-content px-6 py-3 flex items-center justify-between gap-4">
+      <div className="bg-primary text-primary-content px-6 py-3 flex items-center justify-between gap-4">
         <div>
           <p className="text-sm font-bold">Galileo Sandbox — Asset Upload / Asset View</p>
           <p className="text-xs opacity-70">Isolated design-validation prototype. Not wired into the production flow.</p>
@@ -352,14 +362,14 @@ export function AssetUploadSandbox({ onNavigateHome }) {
           <Button
             variant="ghost"
             size="sm"
-            className="text-neutral-content"
+            className={`${HARNESS_BAR_BTN} ${demoControlsOpen ? "bg-primary-content/15" : ""}`}
             onClick={() => setDemoControlsOpen((o) => !o)}
             aria-expanded={demoControlsOpen}
             aria-controls="sandbox-demo-controls"
           >
             Demo controls {demoControlsOpen ? "▴" : "▾"}
           </Button>
-          <Button variant="ghost" size="sm" className="text-neutral-content" onClick={onNavigateHome}>
+          <Button variant="ghost" size="sm" className={HARNESS_BAR_BTN} onClick={onNavigateHome}>
             Exit sandbox
           </Button>
         </div>
@@ -649,11 +659,11 @@ function CompactUploadDropzone({ accept, onFilesSelected }) {
 /** Sandbox-only scenario presets, rendered inside the dark harness chrome
  * so they're visibly prototype/testing controls, not product UI. */
 function DemoControls({ scenarioKey, onSelect, onReplay, onReset }) {
-  const harnessBtn = "btn btn-xs border btn-ghost text-neutral-content border-neutral-content/30";
+  const harnessBtn = "btn btn-xs border btn-ghost text-primary-content border-primary-content/40";
   return (
     <div
       id="sandbox-demo-controls"
-      className="bg-neutral text-neutral-content border-t border-neutral-content/10 px-6 py-3 flex flex-col gap-2"
+      className="bg-primary text-primary-content border-t border-primary-content/20 px-6 py-3 flex flex-col gap-2"
     >
       <div className="max-w-3xl w-full mx-auto flex items-center gap-2 flex-wrap">
         <span className="text-xs uppercase tracking-wide opacity-60 shrink-0 mr-1">Playback</span>
@@ -674,8 +684,8 @@ function DemoControls({ scenarioKey, onSelect, onReplay, onReset }) {
             aria-pressed={scenarioKey === key}
             className={`btn btn-xs border ${
               scenarioKey === key
-                ? "bg-neutral-content text-neutral border-neutral-content"
-                : "btn-ghost text-neutral-content border-neutral-content/30"
+                ? "bg-primary-content text-primary border-primary-content"
+                : "btn-ghost text-primary-content border-primary-content/40"
             }`}
           >
             {s.label}
