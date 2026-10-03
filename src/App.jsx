@@ -5,6 +5,7 @@ import { ContentRequestQueue } from "./pages/ContentRequestQueue";
 import { ManualRequestWizard } from "./pages/ManualRequestWizard";
 import { BulkCsvWizard } from "./pages/BulkCsvWizard";
 import { ProductSelectionDemo } from "./pages/ProductSelectionDemo";
+import { AssetUploadSandbox } from "./pages/sandbox/AssetUploadSandbox";
 import { RequestDetail, RequestNotFound } from "./pages/RequestDetail";
 import { CreateRequestLauncher } from "./components/CreateRequestLauncher";
 import { AppShell } from "./components/AppShell";
@@ -27,6 +28,14 @@ import { handleInternalNavClick } from "./lib/clientNav";
 const isProductSelectionDemo =
   typeof window !== "undefined" &&
   window.location.pathname.replace(/\/+$/, "") === "/product-selection";
+
+// Same isolated-sandbox pattern as isProductSelectionDemo above, for the
+// Asset Upload / Asset View design-validation prototype — a separate
+// dev-only entry point reached by opening/refreshing this URL directly,
+// never linked from AppShell navigation or the main view state machine.
+const isAssetUploadSandbox =
+  typeof window !== "undefined" &&
+  window.location.pathname.replace(/\/+$/, "") === "/asset-upload-sandbox";
 
 // Same lightweight approach, extended with one capture group for the
 // request ID — still no router dependency, just a regex. Unlike
@@ -102,6 +111,13 @@ export default function App() {
   // view machine below is completely untouched for "/".
   if (isProductSelectionDemo) {
     return <ProductSelectionDemo onNavigateHome={() => { window.location.href = "/"; }} />;
+  }
+
+  // Same short-circuit shape as isProductSelectionDemo above — returns
+  // before any of the full prototype's queue/manual/bulk view state exists,
+  // so this sandbox can never observe or affect it.
+  if (isAssetUploadSandbox) {
+    return <AssetUploadSandbox onNavigateHome={() => { window.location.href = "/"; }} />;
   }
 
   const [view, setView] = useState("queue");
