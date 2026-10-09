@@ -4,6 +4,11 @@ import cinnamonCrunch from "../assets/asset-upload-demo/00810607024763_H1C1.jpg"
 import jalapenoPopper from "../assets/asset-upload-demo/00810607025463_H1C1.jpg";
 import spicyQueso from "../assets/asset-upload-demo/00810607026033_H1C1.jpg";
 import kettleCorn from "../assets/asset-upload-demo/00893594002570_H1C1.jpg";
+// Sandbox-only static video poster: a composition of three of the local
+// product images above on a Galileo-blue gradient (generated locally, no
+// external imagery). Used as the "video" thumbnail/preview — there is no
+// real video file and no playback anywhere in this sandbox.
+import launchVideoPoster from "../assets/asset-upload-demo/launch-video-poster.jpg";
 
 /**
  * mockSandboxAssets — local illustrative data for the isolated Asset
@@ -20,6 +25,13 @@ import kettleCorn from "../assets/asset-upload-demo/00893594002570_H1C1.jpg";
  *
  * Display names and sizes are illustrative. `sizeLabel` reflects the
  * approximate size of the original source file, not the bundled copy.
+ *
+ * Mixed-media pass — ONE ATTACHMENT MODEL, MULTIPLE MEDIA REPRESENTATIONS:
+ * every asset has the same shape; `mediaType` ("image" | "pdf" | "video")
+ * only selects the thumbnail/preview renderer. Images carry a real local
+ * `previewSrc`; videos carry the local static poster as `previewSrc` plus
+ * a `duration` label; PDFs have no image (`previewSrc: undefined`) and are
+ * rendered as a mock document page. Nothing is parsed or played.
  *
  * This is a design-validation sandbox, not a production data model.
  */
@@ -47,26 +59,134 @@ export const COMPLETED_FLASH_MS = 1500;
 /** Upload duration for a retried asset (retry always succeeds). */
 export const RETRY_UPLOAD_MS = 2200;
 
+/* ------------------------------------------------------------------
+ * Mock PDF page content — ILLUSTRATIVE PROTOTYPE CONTENT ONLY, not
+ * official product data. Rendered as a static first page in the Preview
+ * modal (no PDF parsing, no PDF library). UPCs match the local product
+ * image filenames; every other value is invented for the demo.
+ * ------------------------------------------------------------------ */
+const DOC_DISCLAIMER = "Illustrative prototype content — not an official document.";
+
+const PRODUCT_SPECS_DOC = {
+  heading: "PRODUCT SPECIFICATIONS",
+  reference: "Spec PC-SQ-018 · Rev 03",
+  subject: "PopCorners Spicy Queso",
+  subline: "18 oz / 510 g",
+  sectionTitle: "Product information",
+  fields: [
+    ["UPC", "00810607026033"],
+    ["Case pack", "12 units"],
+    ["Dimensions", "12.4 × 8.2 × 4.1 in"],
+    ["Net weight", "18 oz (510 g)"],
+    ["Storage", "Cool, dry place"],
+  ],
+  notes: DOC_DISCLAIMER,
+  pages: 4,
+};
+
+const PLANOGRAM_DOC = {
+  heading: "RETAILER PLANOGRAM",
+  reference: "POG 7-03 · v2",
+  subject: "Salty Snacks — Aisle 7, Bay 3",
+  subline: "Effective Nov 1, 2026",
+  sectionTitle: "Placement",
+  fields: [
+    ["Product", "PopCorners Spicy Queso 18 oz"],
+    ["Shelf", "3 of 5 (eye level)"],
+    ["Facings", "4"],
+    ["Adjacent", "PopCorners White Cheddar 18 oz"],
+    ["Fixture", "48 in gondola"],
+  ],
+  notes: DOC_DISCLAIMER,
+  pages: 2,
+};
+
+const REQUEST_BRIEF_DOC = {
+  heading: "CONTENT REQUEST BRIEF",
+  reference: "CR-2026-1048",
+  subject: "PopCorners Spicy Queso — PDP refresh",
+  subline: "Requested Oct 5, 2026",
+  sectionTitle: "Request details",
+  fields: [
+    ["Request type", "Brand visual refresh"],
+    ["Channel", "Retailer product page"],
+    ["Assets", "Hero image, 360 spin, A+ module"],
+    ["Due date", "Oct 30, 2026"],
+    ["Owner", "Brand content team"],
+  ],
+  notes: DOC_DISCLAIMER,
+  pages: 3,
+};
+
+/** Generic page for PDFs without bespoke content (presets, add-more). */
+export function defaultPdfDoc(asset) {
+  return {
+    heading: "DOCUMENT",
+    reference: asset.sizeLabel,
+    subject: asset.name.replace(/\.pdf$/i, ""),
+    subline: "PDF document",
+    sectionTitle: "File information",
+    fields: [
+      ["File name", asset.name],
+      ["File size", asset.sizeLabel],
+      ["Type", "PDF document"],
+    ],
+    notes: DOC_DISCLAIMER,
+    pages: 1,
+  };
+}
+
+/** Non-image demo files (defined before MAIN_DEMO_PLAN, which uses them). */
+const DEMO_PDF = { name: "Product Specs.pdf", sizeLabel: "2.4 MB", mediaType: "pdf", doc: PRODUCT_SPECS_DOC };
+const DEMO_PDF_2 = { name: "Retailer Planogram.pdf", sizeLabel: "1.3 MB", mediaType: "pdf", doc: PLANOGRAM_DOC };
+const DEMO_PDF_FAILS = { name: "Content Request Brief.pdf", sizeLabel: "860 KB", mediaType: "pdf", doc: REQUEST_BRIEF_DOC };
+// Large video — the one asset that demonstrates simulated DETERMINATE
+// progress ("Uploading… 64%"). See the sandbox's PROGRESS note.
+const DEMO_VIDEO = {
+  name: "Launch Video.mp4",
+  sizeLabel: "48.6 MB",
+  mediaType: "video",
+  duration: "0:30",
+  progressMode: "determinate",
+};
+// Smaller video — indeterminate spinner, finishes mid-batch so the Ready
+// video state (poster + play + duration) is visible early.
+const DEMO_VIDEO_2 = { name: "Social Cutdown.mp4", sizeLabel: "12.8 MB", mediaType: "video", duration: "0:15" };
+
 /**
- * MAIN DEMO PLAN — the primary 6-asset simulated upload.
+ * MAIN DEMO PLAN — the primary 11-asset simulated upload, mixed media:
+ * 5 images, 2 PDFs, 2 videos, plus 2 that always fail (Retry succeeds):
+ * 1 PDF — so a Ready PDF and a Failed PDF can be compared directly — and
+ * 1 image.
  *   outcome: "completed" | "failed"
  *   delayMs: time spent in Uploading before the outcome is applied
- * Asset 5 always fails; Asset 6 uploads noticeably longer than the rest.
- * Delays are staggered so no two assets resolve at the same moment.
+ * Delays are staggered so no two assets resolve at the same moment; the
+ * large Launch Video finishes last, with simulated determinate progress.
  */
 const MAIN_DEMO_PLAN = [
-  { image: 0, outcome: "completed", delayMs: 1800 },
-  { image: 1, outcome: "completed", delayMs: 2600 },
-  { image: 2, outcome: "completed", delayMs: 3300 },
-  { image: 3, outcome: "completed", delayMs: 4100 },
-  { image: 4, outcome: "failed", delayMs: 2900 },
-  { image: 5, outcome: "completed", delayMs: 6200 },
+  // Order = display order while uploading (uploading/failed sort first,
+  // stably), chosen so the first visible row always shows the key cases:
+  // determinate video progress, a Ready PDF and the Failed PDF.
+  { image: 4, outcome: "completed", delayMs: 1800 }, // Spicy Queso (image)
+  { file: DEMO_VIDEO, outcome: "completed", delayMs: 9000 }, // Launch Video.mp4 — determinate progress, finishes last
+  { file: DEMO_PDF, outcome: "completed", delayMs: 2400 }, // Product Specs.pdf
+  { file: DEMO_PDF_FAILS, outcome: "failed", delayMs: 2800 }, // Content Request Brief.pdf — fails
+  // Failed IMAGE — no thumbnail while failed (generic unavailable
+  // placeholder); Retry succeeds and reveals the Kettle Corn product image.
+  { image: 5, name: "Retailer PDP banner.jpg", sizeLabel: "3.4 MB", outcome: "failed", delayMs: 3000 },
+  { file: DEMO_VIDEO_2, outcome: "completed", delayMs: 3200 }, // Social Cutdown.mp4 — ready video
+  { image: 1, outcome: "completed", delayMs: 3700 }, // White Cheddar (image)
+  { image: 2, outcome: "completed", delayMs: 4200 }, // Cinnamon Crunch (image)
+  { file: DEMO_PDF_2, outcome: "completed", delayMs: 4700 }, // Retailer Planogram.pdf
+  { image: 3, outcome: "completed", delayMs: 5200 }, // Jalapeño Popper (image)
+  { image: 0, outcome: "completed", delayMs: 5700 }, // Quaker Caramel (image)
 ];
 
 /** Secondary "Add assets" batches: variants of the same six products so
  * appended assets are visually recognizable but distinct by name. */
 const ADD_VARIANTS = ["retailer crop", "social 1x1", "secondary angle"];
 const ADD_DELAYS_MS = [1600, 2500, 3400];
+const ADD_KINDS = ["image", "pdf", "video"];
 
 let batchCounter = 0;
 
@@ -76,25 +196,52 @@ function toAsset(id, image, nameSuffix = "") {
     name: `${image.displayName}${nameSuffix}.jpg`,
     sizeLabel: image.sizeLabel,
     mimeType: "image/jpeg",
+    mediaType: "image", // "image" | "pdf" | "video" — renderer selector only
     status: "uploading", // "uploading" | "completed" | "failed"
     justCompleted: false, // true only during the transient Completed flash
     previewSrc: image.src,
   };
 }
 
+/** Same attachment shape as toAsset, for the non-image demo files. */
+function toFileAsset(id, { name, sizeLabel, mediaType, duration, doc, progressMode }) {
+  return {
+    id,
+    name,
+    sizeLabel,
+    mimeType: mediaType === "pdf" ? "application/pdf" : "video/mp4",
+    mediaType,
+    status: "uploading",
+    justCompleted: false,
+    previewSrc: mediaType === "video" ? launchVideoPoster : undefined,
+    ...(duration ? { duration } : {}),
+    ...(doc ? { doc } : {}),
+    // Prototype-only: "determinate" opts this asset into simulated
+    // percentage progress (asset.progress 0–99) while uploading.
+    ...(progressMode === "determinate" ? { progressMode, progress: 0 } : {}),
+  };
+}
+
+
 /**
- * buildMainDemoBatch — the primary 6-asset simulated upload. Returns
+ * buildMainDemoBatch — the primary 11-asset simulated upload. Returns
  * `{ asset, outcome, delayMs }[]`: each asset starts in "uploading", and
  * the sandbox schedules each one's own independent timers from its plan.
  */
 export function buildMainDemoBatch() {
   batchCounter += 1;
   const batchId = `demo-${batchCounter}`;
-  return MAIN_DEMO_PLAN.map((step, i) => ({
-    asset: toAsset(`${batchId}-${i + 1}`, DEMO_IMAGES[step.image]),
-    outcome: step.outcome,
-    delayMs: step.delayMs,
-  }));
+  return MAIN_DEMO_PLAN.map((step, i) => {
+    const id = `${batchId}-${i + 1}`;
+    let asset;
+    if (step.file) {
+      asset = toFileAsset(id, step.file);
+    } else {
+      asset = toAsset(id, DEMO_IMAGES[step.image]);
+      if (step.name) asset = { ...asset, name: step.name, sizeLabel: step.sizeLabel ?? asset.sizeLabel };
+    }
+    return { asset, outcome: step.outcome, delayMs: step.delayMs };
+  });
 }
 
 /**
@@ -106,14 +253,22 @@ export function buildMainDemoBatch() {
 export function buildAddedBatch(count = 3) {
   batchCounter += 1;
   const batchId = `added-${batchCounter}`;
+  // Mixed-media pass: each added batch is image → PDF → video (cycling),
+  // so "add more files" also demonstrates all three representations.
   return Array.from({ length: count }, (_, i) => {
-    const image = DEMO_IMAGES[(batchCounter + i) % DEMO_IMAGES.length];
-    const variant = ADD_VARIANTS[(batchCounter + i) % ADD_VARIANTS.length];
-    return {
-      asset: toAsset(`${batchId}-${i + 1}`, image, ` — ${variant}`),
-      outcome: "completed",
-      delayMs: ADD_DELAYS_MS[i % ADD_DELAYS_MS.length],
-    };
+    const id = `${batchId}-${i + 1}`;
+    const kind = ADD_KINDS[i % ADD_KINDS.length];
+    let asset;
+    if (kind === "pdf") {
+      asset = toFileAsset(id, { name: `Spec Sheet ${batchCounter}.pdf`, sizeLabel: "1.1 MB", mediaType: "pdf" });
+    } else if (kind === "video") {
+      asset = toFileAsset(id, { name: `Teaser Clip ${batchCounter}.mp4`, sizeLabel: "9.4 MB", mediaType: "video", duration: "0:10" });
+    } else {
+      const image = DEMO_IMAGES[(batchCounter + i) % DEMO_IMAGES.length];
+      const variant = ADD_VARIANTS[(batchCounter + i) % ADD_VARIANTS.length];
+      asset = toAsset(id, image, ` — ${variant}`);
+    }
+    return { asset, outcome: "completed", delayMs: ADD_DELAYS_MS[i % ADD_DELAYS_MS.length] };
   });
 }
 
@@ -158,6 +313,12 @@ function extToMime(name) {
   return "image/jpeg";
 }
 
+function extToMediaType(name) {
+  if (name.endsWith(".mp4")) return "video";
+  if (name.endsWith(".pdf")) return "pdf";
+  return "image";
+}
+
 /** Builds `count` illustrative assets, cycling through the name pool and
  * the six demo images. `statusPattern` maps an index (mod its own length)
  * to a status, so each scenario can shape exactly how many of each state
@@ -165,14 +326,20 @@ function extToMime(name) {
 function buildAssets(count, statusPattern, idPrefix) {
   return Array.from({ length: count }, (_, i) => {
     const name = NAME_POOL[i % NAME_POOL.length];
+    const mediaType = extToMediaType(name);
     return {
       id: `${idPrefix}-${i + 1}`,
       name,
       sizeLabel: SIZES[i % SIZES.length],
       mimeType: extToMime(name),
+      mediaType,
       status: statusPattern[i % statusPattern.length],
       justCompleted: false,
-      previewSrc: DEMO_IMAGES[i % DEMO_IMAGES.length].src,
+      // Same rule as the live demo: images → product photo, videos → the
+      // static poster, PDFs → no image (rendered as a mock document).
+      previewSrc:
+        mediaType === "image" ? DEMO_IMAGES[i % DEMO_IMAGES.length].src : mediaType === "video" ? launchVideoPoster : undefined,
+      ...(mediaType === "video" ? { duration: "0:30" } : {}),
     };
   });
 }
@@ -184,7 +351,7 @@ function buildAssets(count, statusPattern, idPrefix) {
  * loading static assets. */
 export const SANDBOX_SCENARIOS = {
   empty: { label: "Empty", assets: [] },
-  live: { label: "Simulated upload · 6 assets", assets: [], live: true },
+  live: { label: "Simulated upload · 11 assets", assets: [], live: true },
   one: { label: "1 asset", assets: buildAssets(1, ["completed"], "one") },
   few: {
     label: "6 assets · 1 failed",
